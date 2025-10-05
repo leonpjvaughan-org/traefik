@@ -1,0 +1,109 @@
+# Environment and secrets
+*.env*
+*secret*
+/secrets/
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+passwords.txt
+credentials.*
+
+# Docker
+.docker/
+*.log
+volumes/
+data/
+
+# Traefik specific
+traefik.log
+access.log
+acme.json
+dynamic_conf/
+tls/
+
+# Backup and temporary files
+*.backup
+*.bak
+*.tmp
+*.temp
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Terraform (if used for infrastructure)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+*.tfvars.json
+
+# Kubernetes (if used)
+kubeconfig
+*.kubeconfig
+
+# Monitoring and logs
+logs/
+*.log
+monitoring/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+#
+.idea
+.vscode
+.vs
+export_env.sh

@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  httpbin-prod:
+    image: kennethreitz/httpbin
+    networks:
+      - traefik-internal-network
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.httpbin.rule=Host(`httpbin.prod.${TRAEFIK_URL_BASE}`)"
+        - "traefik.http.routers.httpbin.entrypoints=https"
+        - "traefik.http.routers.httpbin.tls.certresolver=acme-cf"
+        - "traefik.http.services.httpbin.loadbalancer.server.port=80"
+        - "traefik.swarm.network=traefik-internal-network"
+
+  httpbin-stage:
+    image: kennethreitz/httpbin
+    networks:
+      - traefik-internal-network
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.httpbin-staging.rule=Host(`httpbin.staging.${TRAEFIK_URL_BASE}`)"
+        - "traefik.http.routers.httpbin-staging.entrypoints=https"
+        - "traefik.http.routers.httpbin-staging.tls.certresolver=acme-cf"
+        - "traefik.http.services.httpbin-staging.loadbalancer.server.port=80"
+        - "traefik.swarm.network=traefik-internal-network"
+
+networks:
+  # docker network create traefik-internal-network --driver=overlay --attachable
+  traefik-internal-network:
+    external: true
+    name: traefik-internal-network

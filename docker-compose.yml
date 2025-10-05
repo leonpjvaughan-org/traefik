@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v3.5
+    ports:
+      - "8080:8080"
+      - "80:80" # HTTP port
+      - "443:443" # HTTPS port
+      - "5432:5432" # Postgres port
+    networks:
+      - traefik-internal-network
+    command:
+      # Enable the web UI and and ping
+      # - "--api.insecure=true" # Remove or comment out for production, for debugging go to http://localhost:8080
+      - "--api.dashboard=true"
+      - "--ping=true"
+      # HTTP configuration
+      - "--entrypoints.http.address=:80"
+      # HTTPS configuration
+      - "--entrypoints.https.address=:443"
+      - "--entrypoints.https.http.tls=true"
+      # 5432 for Postgres
+      - "--entrypoints.pg.address=:5432"
+      - "--entrypoints.pg.http.tls=true"
+      # traefik provider configuration
+      - "--providers.swarm=true"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.network=traefik-internal-network"
+      - "--providers.swarm.exposedbydefault=false"
+      # Let's Encrypt configuration
+      - "--certificatesresolvers.acme-cf.acme.dnsChallenge=true"
+      - "--certificatesresolvers.acme-cf.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.acme-cf.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.acme-cf.acme.dnsChallenge.provider=cloudflare"
+      ## use staging for testing to avoid hitting rate limits
+      # - "--certificatesresolvers.acme-cf.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
+      ## prod
+      - "--certificatesresolvers.acme-cf.acme.caServer=https://acme-v02.api.letsencrypt.org/directory"
+      # log configuration
+      - "--log.level=INFO"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      ## Letsencrypt storage
+      # for network-attached storage use the below line
+      # - /mnt/.../traefik/letsencrypt:/letsencrypt
+      # for local dev use the below line instead of the above line
+      - ./letsencrypt:/letsencrypt
+    deploy:
+      # TODO: make mode global once we have the VIP set up for ingress to the swarm
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.localhost.${TRAEFIK_URL_BASE}`)"
+        - "traefik.http.routers.traefik.entrypoints=https"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.routers.traefik.tls=true"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+        - "traefik.http.routers.traefik.tls.certresolver=acme-cf"
+        # Multiple wildcard domains in a single certificate
+        - "traefik.http.routers.traefik.tls.domains[0].main=*.localhost.${TRAEFIK_URL_BASE}"
+        - "traefik.http.routers.traefik.tls.domains[0].sans=localhost.${TRAEFIK_URL_BASE}"
+        - "traefik.http.routers.traefik.tls.domains[1].main=*.prod.${TRAEFIK_URL_BASE}"
+        - "traefik.http.routers.traefik.tls.domains[1].sans=prod.${TRAEFIK_URL_BASE}"
+        - "traefik.http.routers.traefik.tls.domains[2].main=*.staging.${TRAEFIK_URL_BASE}"
+        - "traefik.http.routers.traefik.tls.domains[2].sans=staging.${TRAEFIK_URL_BASE}"
+    environment:
+      - CF_DNS_API_TOKEN_FILE=/run/secrets/cloudflare_api_token
+    secrets:
+      - cloudflare_api_token
+
+networks:
+  # docker network create traefik-internal-network --driver=overlay --attachable
+  traefik-internal-network:
+    external: true
+    name: traefik-internal-network
+
+secrets:
+  # docker secret create cloudflare_api_token ./secrets/cloudflare_api_token.txt
+  cloudflare_api_token:
+    external: true
